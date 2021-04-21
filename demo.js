@@ -131,7 +131,7 @@ function getBezierList(length_filter) {
         for (i = 0; i < len; i++) {
             if (pathlist[i].len <= length_filter) continue;
             c = pathlist[i].curve;
-            lines.push(new CombineLine(path(c),pathlist[i].sign=='+'));
+            lines.push(new CombineLine(path(c), pathlist[i].sign == '+'));
         }
 
         return lines;
@@ -140,25 +140,25 @@ function getBezierList(length_filter) {
 }
 
 class CombineLine {
-    constructor(BezierList,sign) {
+    constructor(BezierList, sign) {
         this.BezierList = BezierList;
-        this.sign=sign;
+        this.sign = sign;
         this.lengths = BezierList.map(v => v.length());
         this.length = this.lengths.reduce((a, b) => a + b);
         this.size = BezierList.length;
     }
 
     offset(t, d) {
-        if(t<0||t>1){
+        if (t < 0 || t > 1) {
             throw 't<0||t>1';
         }
         let len = this.length * t;
         for (let index = 0; index < this.size; index++) {
             const leni = this.lengths[index];
-            if (len>leni) {
-                len-=leni;
+            if (len > leni) {
+                len -= leni;
             } else {
-                return this.BezierList[index].offset(len/leni,d*(this.sign?1:-1));
+                return this.BezierList[index].offset(len / leni, d * (this.sign ? 1 : -1));
             }
         }
         throw 'should not happen';
