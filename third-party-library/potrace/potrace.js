@@ -1305,3 +1305,4 @@ var Potrace = (function() {
     }
   };
 })();
+export { Potrace };
