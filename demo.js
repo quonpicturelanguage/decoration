@@ -269,7 +269,7 @@ function testDrawQVT(line) {
     `;
     let totalDepth = stringsrc.trim().split(/\n/).length;
     CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
-        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - 0.5) + (positionIndex - 2.5) * 0.5 / 3) * 5);
+        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - 0.5)*0.8 + (positionIndex - 2.5) * 0.5 / 3) * 3.8);
         return [x, y];
     }
     PictureLine.prototype.calculateSVGPosition = function (position) {
