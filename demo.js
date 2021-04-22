@@ -150,16 +150,16 @@ class CombineLine {
 
     offset(t, d) {
         let eps = 1e-8;
-        if (t<0 && t>eps)t=0;
-        if (t>1 && t<1+eps)t=1;
+        if (t < 0 && t > eps) t = 0;
+        if (t > 1 && t < 1 + eps) t = 1;
         if (t < 0 || t > 1) {
             throw 't<0||t>1';
         }
         let len = this.length * t;
         for (let index = 0; index < this.size; index++) {
             const leni = this.lengths[index];
-            if (Math.abs(len-leni)<=eps) {
-                len=leni;
+            if (Math.abs(len - leni) <= eps) {
+                len = leni;
             }
             if (len > leni) {
                 len -= leni;
@@ -167,23 +167,23 @@ class CombineLine {
                 return this.BezierList[index].offset(len / leni, d * (this.sign ? 1 : -1));
             }
         }
-        console.log(this.length,len,this.lengths[this.size-1]);
+        console.log(this.length, len, this.lengths[this.size - 1]);
         throw 'should not happen';
     }
 }
 
 function testDraw(funcList) {
     let n = 100;
-    let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+    let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
     let paths = [];
-    funcList.forEach(func=>{
+    funcList.forEach(func => {
 
-        let pts = [...Array(n+1)].map((v,i)=>func(i/n));
-        pts.forEach(p=>{
-            minx=Math.min(minx,p.x);
-            miny=Math.min(miny,p.y);
-            maxx=Math.max(maxx,p.x);
-            maxy=Math.max(maxy,p.y);
+        let pts = [...Array(n + 1)].map((v, i) => func(i / n));
+        pts.forEach(p => {
+            minx = Math.min(minx, p.x);
+            miny = Math.min(miny, p.y);
+            maxx = Math.max(maxx, p.x);
+            maxy = Math.max(maxy, p.y);
         })
         let path = [];
         path.push('M' + (pts[0].x).toFixed(3) + ' ' + (pts[0].y).toFixed(3) + ' ');
@@ -192,23 +192,23 @@ function testDraw(funcList) {
         }
         paths.push(path);
     })
-    
-    let w=maxx+100,h=maxy+100;
+
+    let w = maxx + 100, h = maxy + 100;
     var svg = '<svg id="svg" version="1.1" width="' + w + '" height="' + h +
-            '" xmlns="http://www.w3.org/2000/svg">';
+        '" xmlns="http://www.w3.org/2000/svg">';
 
     var strokec = "black";
     var fillc = "none";
     var fillrule = '';
 
-    paths.forEach(path=>{
+    paths.forEach(path => {
         svg += '<path d="';
         svg += path.join(' ');
         svg += '" stroke="' + strokec + '" fill="' + fillc + '"' + fillrule + '/>';
     })
 
     svg += '</svg>';
-    return {svg,paths,minx,miny,maxx,maxy};
+    return { svg, paths, minx, miny, maxx, maxy };
 }
 
 function main(params) {
@@ -224,16 +224,16 @@ function main(params) {
         let lines = getBezierList(length_filter);
         globalThis.lines = lines;
         console.log(lines);
-        function tempdraw(lineis,d) {
-            let {svg} = testDraw(lineis.map(linei=>(t)=>lines[linei].offset(t,d)));
+        function tempdraw(lineis, d) {
+            let { svg } = testDraw(lineis.map(linei => (t) => lines[linei].offset(t, d)));
             document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
             console.log(document.body.children[document.body.children.length - 1]);
         }
-        tempdraw(lines.map((v,i)=>i),0);
-        tempdraw(lines.map((v,i)=>i),0.2);
-        tempdraw(lines.map((v,i)=>i),-0.2);
-        tempdraw(lines.map((v,i)=>i),1);
-        tempdraw(lines.map((v,i)=>i),-1);
+        tempdraw(lines.map((v, i) => i), 0);
+        tempdraw(lines.map((v, i) => i), 0.2);
+        tempdraw(lines.map((v, i) => i), -0.2);
+        tempdraw(lines.map((v, i) => i), 1);
+        tempdraw(lines.map((v, i) => i), -1);
     });
 }
 
