@@ -3,6 +3,11 @@ import { Potrace } from './third-party-library/potrace/potrace.js';
 globalThis.Bezier = Bezier;
 globalThis.Potrace = Potrace;
 
+/** @type {import('../visualtool/src/main.js').QVT}*/
+const { QVT } = globalThis.exports;
+const { CircuitNode, PictureLine } = QVT.prototype;
+
+
 function getSVGWithFilter(size, opt_type, length_filter) {
 
     var { bm, pathlist } = Potrace.getVars();
@@ -153,7 +158,7 @@ class CombineLine {
         if (t < 0 && t > -eps) t = 0;
         if (t > 1 && t < 1 + eps) t = 1;
         if (t < 0 || t > 1) {
-            throw 't<0||t>1';
+            throw 't<0||t>1 : t= ' + t;
         }
         let len = this.length * t;
         for (let index = 0; index < this.size; index++) {
@@ -211,6 +216,79 @@ function testDraw(funcList) {
     return { svg, paths, minx, miny, maxx, maxy };
 }
 
+
+/**
+ * calculation a n-d position
+ * @param {Number} deep 
+ * @param {Number} bitIndex 
+ * @param {Number} positionIndex in 1~4
+ */
+CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
+    return [bitIndex + 0.25 + (positionIndex - 1) * 0.5 / 3, deep + 1];
+}
+
+function testDrawQVT(line) {
+    let stringsrc = `
+        y,z
+        x1,y1
+        cz1,cz2
+        h3,h
+        x1,y1
+        cz1,cz2
+        y,z
+        x1,y1
+        cz1,cz2
+        h2,s
+        h3,h1
+        cz1,cz2
+        h3,h
+        x1,y1
+        cz1,cz2
+        h2,s
+        h3,h1
+        cz1,cz2
+        h2,s
+        h3,h1
+        cz1,cz2
+        h3,h
+        x1,y1
+        cz1,cz2
+        h2,s
+        h3,h1
+        cz1,cz2
+        cz1,cz2
+        y,z
+        x1,y1
+        cz1,cz2
+        y,z
+        x1,y1
+        cz1,cz2
+        y,z
+        x1,y1
+        cz1,cz2
+    `;
+    let totalDepth = stringsrc.trim().split(/\n/).length;
+    CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
+        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - 0.5) + (positionIndex - 2.5) * 0.5 / 3) * 5);
+        return [x, y];
+    }
+    PictureLine.prototype.calculateSVGPosition = function (position) {
+        return position.map(v => 20 * v)
+    }
+    QVT.prototype.getSVGViewBox = function (gateArray) {
+        let boxSize = new this.PictureLine().calculateSVGPosition([gateArray[0].length, gateArray.length])
+        return `0 0 4000 4000`
+    }
+    let qvt;
+    qvt = new QVT().init()
+    qvt.setInput(stringsrc)
+    qvt.getNodes()
+    qvt.getLines()
+    qvt.getSVGContentString()
+    qvt.getSVGFrame()
+    return qvt.SVGFrame
+}
+
 function main(params) {
     Potrace.loadImageFromUrl("../Potrace.png");
     Potrace.process(function () {
@@ -234,6 +312,11 @@ function main(params) {
         tempdraw(lines.map((v, i) => i), -0.2);
         tempdraw(lines.map((v, i) => i), 1);
         tempdraw(lines.map((v, i) => i), -1);
+
+        {
+            let svg = testDrawQVT(lines[0]);
+            document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
+        }
     });
 }
 
