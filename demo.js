@@ -150,7 +150,7 @@ class CombineLine {
 
     offset(t, d) {
         let eps = 1e-8;
-        if (t < 0 && t > eps) t = 0;
+        if (t < 0 && t > -eps) t = 0;
         if (t > 1 && t < 1 + eps) t = 1;
         if (t < 0 || t > 1) {
             throw 't<0||t>1';
