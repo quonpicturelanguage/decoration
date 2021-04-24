@@ -223,7 +223,16 @@ const QVTGConfig = {
     arg_extra: 0.13,
     svg_position_ratio: 20,
     svg_size_ratio: 3,
+    line_width_ratio: 3.8,
     disable_connecting_cz:true,
+    frontlineWidth:4,
+    backlineWidth:9,
+    chargeRadiusPlus:4,
+}
+
+const QVTGConfig_Default = Object.assign({},QVTGConfig)
+function resetQVTGConfig() {
+    Object.assign(QVTGConfig,QVTGConfig_Default)
 }
 
 function testDrawQVT(line) {
@@ -239,8 +248,11 @@ function testDrawQVT(line) {
         parallelNegativeSmall: argExtra,
         parallelNegativeBig: argExtra,
     }
+    QVT.prototype.frontlineWidth = QVTGConfig.frontlineWidth
+    QVT.prototype.backlineWidth = QVTGConfig.backlineWidth
+    QVT.prototype.chargeRadiusPlus = QVTGConfig.chargeRadiusPlus
     CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
-        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - (totalBits - 1) / 2) * 0.8 + (positionIndex - 2.5) * 0.5 / 3) * 3.8);
+        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - (totalBits - 1) / 2) * 0.65 + (positionIndex - 2.5) * 0.5 / 3) * QVTGConfig.line_width_ratio);
         return [x, y];
     }
     PictureLine.prototype.calculateSVGPosition = function (position) {
@@ -347,11 +359,12 @@ function testDrawQVT(line) {
     }
     QVT.prototype.generateSVGFrame = function (SVGContentString) {
         // viewBox="${this.getSVGViewBox()}"
+        let svgid=('a'+Math.random()).replace('.','')
         let SVGFrame = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${this.getSVGWidth()}" height="${this.getSVGHeight()}" viewBox="${this.getSVGViewBox()}">
+        <svg id="${svgid}" xmlns="http://www.w3.org/2000/svg" width="${this.getSVGWidth()}" height="${this.getSVGHeight()}" viewBox="${this.getSVGViewBox()}">
             <defs xmlns="http://www.w3.org/2000/svg">
                 <style xmlns="http://www.w3.org/2000/svg" type="text/css"><![CDATA[
-                    ${this.getSVGCSS()}
+                    ${this.getSVGCSS().replace(/([\w.]+{)/g,`#${svgid} $1`)}
                 ]]></style>
             </defs>
             ${SVGContentString}
@@ -433,13 +446,13 @@ function generateRandomCircuit(n, depth) {
     return gates
 }
 
-function main(params) {
-    Potrace.loadImageFromUrl("./demo.png");
+function onePicture(pictureURL,cb) {
+    Potrace.loadImageFromUrl(pictureURL);
     Potrace.process(function () {
         let length_filter = 10;
         let svg = getSVGWithFilter(1, "curve", length_filter);
         // console.log(svg);
-        document.body.appendChild(Potrace.img);
+        // document.body.appendChild(Potrace.img);
         // document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
         // console.log(document.body.children[document.body.children.length - 1]);
 
@@ -473,11 +486,26 @@ function main(params) {
             svg = qvt.generateSVGFrame(svg);
             document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
         }
+        resetQVTGConfig()
+        QVTGConfig.svg_size_ratio=3
         QVTGConfig.qubit_number=2
         drawPictureQvt()
         QVTGConfig.qubit_number=1
+        QVTGConfig.line_width_ratio=4.8
+        QVTGConfig.frontlineWidth=6
+        QVTGConfig.backlineWidth=14
+        QVTGConfig.chargeRadiusPlus=6
         drawPictureQvt()
+        if (cb) {
+            setTimeout(cb, 100);
+        }
     });
+}
+
+function main(params) {
+    onePicture("./demo.png",function () {
+        onePicture("./demo2.png")
+    })
 }
 
 export { main };
