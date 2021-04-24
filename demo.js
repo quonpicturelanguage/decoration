@@ -216,50 +216,23 @@ function testDraw(funcList) {
     return { svg, paths, minx, miny, maxx, maxy };
 }
 
+const QVTGConfig = {
+    qubit_number: 2,
+    gate_length: 7,
+    gate_count_plus:2,
+    arg_extra: 0.13,
+    svg_position_ratio: 20,
+    svg_size_ratio: 3,
+    disable_connecting_cz:true,
+}
 
 function testDrawQVT(line) {
     // 356 ~ 37
-    let stringsrc = `
-        y,z
-        x1,y1
-        cz1,cz2
-        h3,h
-        x1,y1
-        cz1,cz2
-        y,z
-        x1,y1
-        cz1,cz2
-        h2,s
-        h3,h1
-        cz1,cz2
-        h3,h
-        x1,y1
-        cz1,cz2
-        h2,s
-        h3,h1
-        cz1,cz2
-        h2,s
-        h3,h1
-        cz1,cz2
-        h3,h
-        x1,y1
-        cz1,cz2
-        h2,s
-        h3,h1
-        cz1,cz2
-        cz1,cz2
-        y,z
-        x1,y1
-        cz1,cz2
-        y,z
-        x1,y1
-        cz1,cz2
-        y,z
-        x1,y1
-        cz1,cz2
-    `;
-    let totalDepth = stringsrc.trim().split(/\n/).length;
-    const argExtra = 0.13;
+    // let totalDepth = 37;
+    let totalDepth = Math.ceil(line.length / QVTGConfig.gate_length) + QVTGConfig.gate_count_plus;
+    let totalBits = QVTGConfig.qubit_number;
+    let stringsrc = generateRandomCircuit(totalBits, totalDepth).map(v => v.join(',')).join('\n')
+    const argExtra = QVTGConfig.arg_extra;
     CircuitNode.prototype.LineArgument = {
         parallelPositive: argExtra,
         parallelNegativeNormal: argExtra,
@@ -267,33 +240,33 @@ function testDrawQVT(line) {
         parallelNegativeBig: argExtra,
     }
     CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
-        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - 0.5) * 0.8 + (positionIndex - 2.5) * 0.5 / 3) * 3.8);
+        let { x, y } = line.offset(deep / totalDepth, ((bitIndex - (totalBits - 1) / 2) * 0.8 + (positionIndex - 2.5) * 0.5 / 3) * 3.8);
         return [x, y];
     }
     PictureLine.prototype.calculateSVGPosition = function (position) {
-        return position.map(v => 20*v)
+        return position.map(v => QVTGConfig.svg_position_ratio * v)
     }
-    let getSVGLineData = (pl)=>{
+    let getSVGLineData = (pl) => {
         let lineData;// = this.Line[this.type](this.args)
         let SVGLineData;// = lineData.map(v => [v[0], v.slice(1).map(v => this.calculateSVGPosition(this.combine(v)))])
-        
+
         let node1 = pl.node1;
         let node2 = pl.node2;
         let index1 = pl.rawArg[1];
         let index2 = pl.rawArg[2].targetIndex;
         // only consider ring now
-        const getExtraPoint = (node,index)=>{
+        const getExtraPoint = (node, index) => {
             let ndeep;
-            if (pl.qvt.util.lp(index)){
+            if (pl.qvt.util.lp(index)) {
                 ndeep = node.deep - 1
             } else {
                 ndeep = node.deep + 1
             }
-            ndeep = (ndeep + pl.qvt.gateArray.length)%pl.qvt.gateArray.length
+            ndeep = (ndeep + pl.qvt.gateArray.length) % pl.qvt.gateArray.length
             let nnode = pl.qvt.nodeNet[pl.qvt.util.di2s(ndeep, node.bitIndex)]
             return nnode.position[index]
         }
-        let sourcePosition = pl.sourcePosition.concat([getExtraPoint(node1,index1),getExtraPoint(node2,index2)])
+        let sourcePosition = pl.sourcePosition.concat([getExtraPoint(node1, index1), getExtraPoint(node2, index2)])
         let combine = (distribution) => sourcePosition[0].map((v, i) => distribution.map((v, j) => v * sourcePosition[j][i]).reduce((a, b) => a + b))
         if (pl.type == 'parallelNegative') {
             lineData = ((a) => [
@@ -302,7 +275,7 @@ function testDrawQVT(line) {
                 ],
                 ['C',
                     [1, 0, 0, a[0], -a[0], 0],
-                    [a[0], 1 ,0 ,0 , 0, -a[0]],
+                    [a[0], 1, 0, 0, 0, -a[0]],
                     [0, 1, 0, 0, 0, 0]
                 ]
             ])([argExtra])
@@ -312,9 +285,9 @@ function testDrawQVT(line) {
                     [1, 0, 0, 0, 0, 0]
                 ],
                 ['C',
-                    [1,0, a[0],0, -a[0], 0],
-                    [a[0],0, 1 ,0, 0, -a[0]],
-                    [0,0, 1,0, 0, 0],
+                    [1, 0, a[0], 0, -a[0], 0],
+                    [a[0], 0, 1, 0, 0, -a[0]],
+                    [0, 0, 1, 0, 0, 0],
                 ]
 
             ])([argExtra])
@@ -322,19 +295,19 @@ function testDrawQVT(line) {
             lineData = ((a) => [
                 ['M',
                     [1, 0, 0, 0]
-                ], 
+                ],
                 ['C',
                     [1, a[0], -a[0], 0],
-                    [a[0], 1 , 0, -a[0]],
+                    [a[0], 1, 0, -a[0]],
                     [0, 1, 0, 0],
                 ]
 
             ])([argExtra])
         }
         SVGLineData = lineData.map(v => [v[0], v.slice(1).map(v => pl.calculateSVGPosition(combine(v)))])
-        globalThis.extraDebug = {node1,node2,index1,index2,pl,getExtraPoint,sourcePosition,combine,lineData,SVGLineData}
+        globalThis.extraDebug = { node1, node2, index1, index2, pl, getExtraPoint, sourcePosition, combine, lineData, SVGLineData }
         // var {node1,node2,index1,index2,pl,getExtraPoint,sourcePosition,combine,lineData,SVGLineData} = globalThis.extraDebug
-        
+
         return SVGLineData;
     }
     PictureLine.prototype.renderLine = function () {
@@ -352,8 +325,8 @@ function testDrawQVT(line) {
             ...SVGLineData[1][1][1],
             ...SVGLineData[1][1][2],
         )
-        let {x,y} = curve.offset(0.5,0)
-        let SVGChargeData=[x,y]
+        let { x, y } = curve.offset(0.5, 0)
+        let SVGChargeData = [x, y]
 
         // fill r here only for the compatible of SVGToPDF
         // in web browser, css-r has higher order than attribute-r
@@ -395,8 +368,73 @@ function testDrawQVT(line) {
     // return qvt.SVGFrame
 }
 
+function generateRandomCircuit(n, depth) {
+    let list = [
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+        'cz',
+
+        'h',
+        'h1',
+        'h2',
+        'h3',
+        's',
+        's1',
+        'sd',
+        'sd1',
+        'h',
+        'h1',
+        'h2',
+        'h3',
+        's',
+        's1',
+        'sd',
+        'sd1',
+
+        'x',
+        'x1',
+        'y',
+        'y1',
+        'z',
+        'z1',
+    ]
+    let gates = [...Array(depth)].map(v => [...Array(n)].map(v => ''))
+    let ncz = 0
+    let nextskip = false
+    gates.forEach((d, di) => {
+        d.forEach((q, qi) => {
+            if (nextskip) {
+                nextskip = false
+                return
+            }
+            let gi = list[~~(Math.random() * list.length)]
+            while (gi == 'cz' && (qi == n - 1 || (di > 0 && gates[di - 1][qi].slice(0, 2) == 'cz' && QVTGConfig.disable_connecting_cz))) {
+                gi = list[~~(Math.random() * list.length)]
+            }
+            gates[di][qi] = gi
+            if (gi == 'cz') {
+                ncz++
+                gates[di][qi] = gi + ncz
+                ncz++
+                gates[di][qi + 1] = gi + ncz
+                nextskip = true
+            }
+        })
+    })
+    return gates
+}
+
 function main(params) {
-    Potrace.loadImageFromUrl("../tmp.png");
+    Potrace.loadImageFromUrl("./demo.png");
     Potrace.process(function () {
         let length_filter = 10;
         let svg = getSVGWithFilter(1, "curve", length_filter);
@@ -419,7 +457,7 @@ function main(params) {
         // tempdraw(lines.map((v, i) => i), 1);
         // tempdraw(lines.map((v, i) => i), -1);
 
-        {
+        function drawPictureQvt() {
             let svg = testDrawQVT(lines[0]);
             lines.forEach((v, i) => {
                 if (i == 0) {
@@ -429,12 +467,16 @@ function main(params) {
             })
             let qvt = new QVT().init()
             var { bm, pathlist } = Potrace.getVars();
-            qvt.getSVGHeight = ()=>bm.h*5
-            qvt.getSVGWidth = ()=>bm.w*5
-            qvt.getSVGViewBox = ()=>`0 0 ${bm.w*20} ${bm.h*20}`
+            qvt.getSVGHeight = () => bm.h * QVTGConfig.svg_size_ratio
+            qvt.getSVGWidth = () => bm.w * QVTGConfig.svg_size_ratio
+            qvt.getSVGViewBox = () => `0 0 ${bm.w * QVTGConfig.svg_position_ratio} ${bm.h * QVTGConfig.svg_position_ratio}`
             svg = qvt.generateSVGFrame(svg);
             document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
         }
+        QVTGConfig.qubit_number=2
+        drawPictureQvt()
+        QVTGConfig.qubit_number=1
+        drawPictureQvt()
     });
 }
 
