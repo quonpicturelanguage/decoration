@@ -217,17 +217,8 @@ function testDraw(funcList) {
 }
 
 
-/**
- * calculation a n-d position
- * @param {Number} deep 
- * @param {Number} bitIndex 
- * @param {Number} positionIndex in 1~4
- */
-CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
-    return [bitIndex + 0.25 + (positionIndex - 1) * 0.5 / 3, deep + 1];
-}
-
 function testDrawQVT(line) {
+    // 356 ~ 37
     let stringsrc = `
         y,z
         x1,y1
@@ -268,6 +259,13 @@ function testDrawQVT(line) {
         cz1,cz2
     `;
     let totalDepth = stringsrc.trim().split(/\n/).length;
+    const argExtra = 0.13;
+    CircuitNode.prototype.LineArgument = {
+        parallelPositive: argExtra,
+        parallelNegativeNormal: argExtra,
+        parallelNegativeSmall: argExtra,
+        parallelNegativeBig: argExtra,
+    }
     CircuitNode.prototype.calculatePosition = function (deep, bitIndex, positionIndex) {
         let { x, y } = line.offset(deep / totalDepth, ((bitIndex - 0.5) * 0.8 + (positionIndex - 2.5) * 0.5 / 3) * 3.8);
         return [x, y];
@@ -276,10 +274,99 @@ function testDrawQVT(line) {
         return position.map(v => 20 * v)
     }
     QVT.prototype.getSVGViewBox = function (gateArray) {
+        return `0 0 3000 6000`
         return `0 0 10000 6000`
+        return `0 0 1600 1600`
+        return `0 0 800 800`
     }
-    let qvt;
-    qvt = new QVT().init()
+    let getSVGLineData = (pl)=>{
+        let lineData;// = this.Line[this.type](this.args)
+        let SVGLineData;// = lineData.map(v => [v[0], v.slice(1).map(v => this.calculateSVGPosition(this.combine(v)))])
+        
+        let node1 = pl.node1;
+        let node2 = pl.node2;
+        let index1 = pl.rawArg[1];
+        let index2 = pl.rawArg[2].targetIndex;
+        // only consider ring now
+        const getExtraPoint = (node,index)=>{
+            let ndeep;
+            if (pl.qvt.util.lp(index)){
+                ndeep = node.deep - 1
+            } else {
+                ndeep = node.deep + 1
+            }
+            ndeep = (ndeep + pl.qvt.gateArray.length)%pl.qvt.gateArray.length
+            let nnode = pl.qvt.nodeNet[pl.qvt.util.di2s(ndeep, node.bitIndex)]
+            return nnode.position[index]
+        }
+        let sourcePosition = pl.sourcePosition.concat([getExtraPoint(node1,index1),getExtraPoint(node2,index2)])
+        let combine = (distribution) => sourcePosition[0].map((v, i) => distribution.map((v, j) => v * sourcePosition[j][i]).reduce((a, b) => a + b))
+        if (pl.type == 'parallelNegative') {
+            lineData = ((a) => [
+                ['M',
+                    [1, 0, 0, 0, 0, 0]
+                ],
+                ['C',
+                    [1, 0, 0, a[0], -a[0], 0],
+                    [a[0], 1 ,0 ,0 , 0, -a[0]],
+                    [0, 1, 0, 0, 0, 0]
+                ]
+            ])([argExtra])
+        } else if (pl.type == 'parallelPositive') {
+            lineData = ((a) => [
+                ['M',
+                    [1, 0, 0, 0, 0, 0]
+                ],
+                ['C',
+                    [1,0, a[0],0, -a[0], 0],
+                    [a[0],0, 1 ,0, 0, -a[0]],
+                    [0,0, 1,0, 0, 0],
+                ]
+
+            ])([argExtra])
+        } else if (pl.type == 'direct') {
+            lineData = ((a) => [
+                ['M',
+                    [1, 0, 0, 0]
+                ], 
+                ['C',
+                    [1, a[0], -a[0], 0],
+                    [a[0], 1 , 0, -a[0]],
+                    [0, 1, 0, 0],
+                ]
+
+            ])([argExtra])
+        }
+        SVGLineData = lineData.map(v => [v[0], v.slice(1).map(v => pl.calculateSVGPosition(combine(v)))])
+        globalThis.extraDebug = {node1,node2,index1,index2,pl,getExtraPoint,sourcePosition,combine,lineData,SVGLineData}
+        // var {node1,node2,index1,index2,pl,getExtraPoint,sourcePosition,combine,lineData,SVGLineData} = globalThis.extraDebug
+        
+        return SVGLineData;
+    }
+    PictureLine.prototype.renderLine = function () {
+        let SVGLineData = getSVGLineData(this);
+        let SVGLineString = JSON.stringify(SVGLineData).replace(/[^-.MLQC0-9]+/g, ' ').trim()
+        let SVGString = `<path d="${SVGLineString}" class="backline ${this.getCommonClass()}"/>\n<path d="${SVGLineString}" class="frontline ${this.getCommonClass()}"/>\n`
+        return [[this.renderOrder(), SVGString]]
+    }
+    PictureLine.prototype.renderCharge = function () {
+
+        let SVGLineData = getSVGLineData(this);
+        let curve = new Bezier(
+            ...SVGLineData[0][1][0],
+            ...SVGLineData[1][1][0],
+            ...SVGLineData[1][1][1],
+            ...SVGLineData[1][1][2],
+        )
+        let {x,y} = curve.offset(0.5,0)
+        let SVGChargeData=[x,y]
+
+        // fill r here only for the compatible of SVGToPDF
+        // in web browser, css-r has higher order than attribute-r
+        let SVGString = `<circle cx="${SVGChargeData[0]}" cy="${SVGChargeData[1]}" r="${this.qvt.frontlineWidth / 2 + this.qvt.chargeRadiusPlus}" class="charge ${this.getCommonClass()}"/>\n`
+        return [[this.renderOrder(), SVGString]]
+    }
+    let qvt = globalThis.qvt = new QVT().init();
     qvt.setInput(stringsrc)
     qvt.getNodes()
     qvt.getLines()
