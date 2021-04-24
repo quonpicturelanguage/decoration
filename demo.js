@@ -271,13 +271,7 @@ function testDrawQVT(line) {
         return [x, y];
     }
     PictureLine.prototype.calculateSVGPosition = function (position) {
-        return position.map(v => 20 * v)
-    }
-    QVT.prototype.getSVGViewBox = function (gateArray) {
-        return `0 0 3000 6000`
-        return `0 0 10000 6000`
-        return `0 0 1600 1600`
-        return `0 0 800 800`
+        return position.map(v => 20*v)
     }
     let getSVGLineData = (pl)=>{
         let lineData;// = this.Line[this.type](this.args)
@@ -366,13 +360,39 @@ function testDrawQVT(line) {
         let SVGString = `<circle cx="${SVGChargeData[0]}" cy="${SVGChargeData[1]}" r="${this.qvt.frontlineWidth / 2 + this.qvt.chargeRadiusPlus}" class="charge ${this.getCommonClass()}"/>\n`
         return [[this.renderOrder(), SVGString]]
     }
+    QVT.prototype.getSVGViewBox = function () {
+        return `0 0 3000 6000`
+        return `0 0 10000 6000`
+        return `0 0 1600 1600`
+        return `0 0 800 800`
+    }
+    QVT.prototype.getSVGWidth = function () {
+        return 3000
+    }
+    QVT.prototype.getSVGHeight = function () {
+        return 1000
+    }
+    QVT.prototype.generateSVGFrame = function (SVGContentString) {
+        // viewBox="${this.getSVGViewBox()}"
+        let SVGFrame = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${this.getSVGWidth()}" height="${this.getSVGHeight()}" viewBox="${this.getSVGViewBox()}">
+            <defs xmlns="http://www.w3.org/2000/svg">
+                <style xmlns="http://www.w3.org/2000/svg" type="text/css"><![CDATA[
+                    ${this.getSVGCSS()}
+                ]]></style>
+            </defs>
+            ${SVGContentString}
+        </svg>
+        `
+        return SVGFrame
+    }
     let qvt = globalThis.qvt = new QVT().init();
     qvt.setInput(stringsrc)
     qvt.getNodes()
     qvt.getLines()
     return qvt.getSVGContentString()
-    qvt.getSVGFrame()
-    return qvt.SVGFrame
+    // qvt.getSVGFrame()
+    // return qvt.SVGFrame
 }
 
 function main(params) {
@@ -382,8 +402,8 @@ function main(params) {
         let svg = getSVGWithFilter(1, "curve", length_filter);
         // console.log(svg);
         document.body.appendChild(Potrace.img);
-        document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
-        console.log(document.body.children[document.body.children.length - 1]);
+        // document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
+        // console.log(document.body.children[document.body.children.length - 1]);
 
         let lines = getBezierList(length_filter);
         globalThis.lines = lines;
@@ -394,10 +414,10 @@ function main(params) {
             console.log(document.body.children[document.body.children.length - 1]);
         }
         tempdraw(lines.map((v, i) => i), 0);
-        tempdraw(lines.map((v, i) => i), 0.2);
-        tempdraw(lines.map((v, i) => i), -0.2);
-        tempdraw(lines.map((v, i) => i), 1);
-        tempdraw(lines.map((v, i) => i), -1);
+        // tempdraw(lines.map((v, i) => i), 0.2);
+        // tempdraw(lines.map((v, i) => i), -0.2);
+        // tempdraw(lines.map((v, i) => i), 1);
+        // tempdraw(lines.map((v, i) => i), -1);
 
         {
             let svg = testDrawQVT(lines[0]);
@@ -407,7 +427,12 @@ function main(params) {
                 }
                 svg += testDrawQVT(lines[i]);
             })
-            svg = new QVT().init().generateSVGFrame(svg);
+            let qvt = new QVT().init()
+            var { bm, pathlist } = Potrace.getVars();
+            qvt.getSVGHeight = ()=>bm.h*5
+            qvt.getSVGWidth = ()=>bm.w*5
+            qvt.getSVGViewBox = ()=>`0 0 ${bm.w*20} ${bm.h*20}`
+            svg = qvt.generateSVGFrame(svg);
             document.body.insertAdjacentHTML("beforeend", '<br>' + svg);
         }
     });
