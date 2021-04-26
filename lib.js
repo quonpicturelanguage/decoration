@@ -477,7 +477,7 @@ function main(params) {
         ctx.fillStyle="white";
         ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.textBaseline = "middle";
-        ctx.font="53px cursive";
+        ctx.font="53px 'Architects Daughter'";
         ctx.shadowColor="black";
         ctx.shadowBlur=3;
         ctx.fillStyle="black";
