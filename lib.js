@@ -460,6 +460,8 @@ function generateRandomCircuit(n, depth) {
 
 function main(params) {
 
+    let vars = {}
+
     let prepareTextOnInput = function (ele) {
         ele.parentElement.querySelector('span.textpreview').innerText=ele.value
         const lines = ele.value.split('\n')
@@ -498,7 +500,12 @@ function main(params) {
         Potrace.process(function () {
             let length_filter = 10;
             let svg = getSVGWithFilter(1, "curve", length_filter);
-            document.querySelector('div.boundary').innerHTML = svg;
+            // document.querySelector('div.boundary').innerHTML = svg;
+            let svg64 = 'data:image/svg+xml;base64,'+btoa(svg)
+            let img = document.createElement('img')
+            img.src = svg64
+            document.querySelector('div.boundary').innerHTML=''
+            document.querySelector('div.boundary').appendChild(img)
             cb()
         })
     }
@@ -538,28 +545,97 @@ function main(params) {
         // ele.style.height=h*3+'px'
         // ele.style.backgroundImage = 'url("'+svg64+'")';
         let img = document.createElement('img')
-        img.width = w*3
-        img.height = h*3
+        let imgw=w*3
+        let imgh=h*3
+        img.width = imgw
+        img.height = imgh
         img.src = svg64
         document.querySelector('div.quonimg').innerHTML=''
         document.querySelector('div.quonimg').appendChild(img)
-        return {svg,svgid,svgw,svgh,w,h,svg64,img}
+        vars.quon = {svg,svgid,svgw,svgh,imgw,imgh,w,h,svg64}
+        return {svg,svgid,svgw,svgh,imgw,imgh,w,h,svg64}
     }
 
+    let useLocalTexture = function () {
+        util.upload(function (files) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.querySelector("#texture").src = e.target.result;
+            };
+            reader.readAsDataURL(files[0]);
+        })
+    }
 
-    //  put canvas in Dom
-    var { imgCanvas } = Potrace.getVars();
-    document.querySelector('.canvasarea').appendChild(imgCanvas);
-    
-    // listen
-    document.querySelector('textarea.preparetext').oninput = function(){prepareTextOnInput(this)}
-    document.querySelector("#step1 > input.loadfile").onclick = function(){useLocalFile()}
-    document.querySelector("#step1 > input.exec").onclick = function(){pictureToBoundary(()=>boundaryToQuon());}
+    let addTexture = function () {
+        document.querySelector('.coloredquon').innerHTML=''
+        let {svg,svgid,svgw,svgh,imgw,imgh,w,h,svg64} = vars.quon
+        var imgElement = document.createElement('img')
+        var imgCanvas = document.createElement("canvas")
+        var imgCanvas2 = document.createElement("canvas")
+        imgElement.src = svg64
+        imgElement.onload=()=>{
+            imgCanvas.width = imgElement.width;
+            imgCanvas.height = imgElement.height;
+            var ctx = imgCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0,0,imgElement.width,imgElement.height);
+            ctx.drawImage(imgElement, 0, 0);
+            var imgdataobj = ctx.getImageData(0, 0, imgElement.width, imgElement.height);
 
-    // exec once
+            imgCanvas2.width = imgElement.width;
+            imgCanvas2.height = imgElement.height;
+            var ctx2 = imgCanvas2.getContext('2d');
+            ctx2.clearRect(0,0,imgElement.width,imgElement.height);
+            ctx2.drawImage(document.querySelector("#texture"), 0, 0,imgElement.width,imgElement.height);
+            var imgdataobj2 = ctx2.getImageData(0, 0, imgElement.width, imgElement.height);
+            console.log(imgdataobj2);
+
+            var l = imgdataobj.data.length, i, j, color;
+            for (i = 0, j = 0; i < l; i += 4, j++) {
+                var sum = imgdataobj.data[i]+imgdataobj.data[i + 1]+imgdataobj.data[i + 2]
+                if (sum==255*3) {
+                    imgdataobj.data[i]=imgdataobj.data[i + 1]=imgdataobj.data[i + 2]=imgdataobj.data[i + 3]=0
+                }
+                if (sum!=0 && sum!=255*3) {
+                    globalThis.debugobj = [sum,imgdataobj.data[i],imgdataobj.data[i + 1],imgdataobj.data[i + 2],imgdataobj.data[i + 3]]
+                    imgdataobj.data[i + 3] = 255-sum,imgdataobj.data[i]
+                    imgdataobj.data[i]=imgdataobj.data[i + 1]=imgdataobj.data[i + 2]=0
+                }
+                imgdataobj2.data[i + 3]=imgdataobj.data[i + 3]
+            }
+            ctx.clearRect(0,0,imgElement.width,imgElement.height)
+            ctx.putImageData(imgdataobj, 0, 0);
+
+            ctx2.clearRect(0,0,imgElement.width,imgElement.height)
+            ctx2.putImageData(imgdataobj2, 0, 0);
+
+            // document.querySelector('.coloredquon').appendChild(imgCanvas)
+            // document.querySelector('.coloredquon').appendChild(imgCanvas2)
+
+            let img = document.createElement('img')
+            img.src = imgCanvas2.toDataURL()
+            img.width = imgw
+            img.height = imgh
+            document.querySelector('.coloredquon').appendChild(img)
+        }
+        // document.querySelector('.coloredquon').appendChild(imgElement)
+    }
+
     window.onload = ()=>{
+        //  put canvas in Dom
+        var { imgCanvas } = Potrace.getVars();
+        document.querySelector('.canvasarea').appendChild(imgCanvas);
+        
+        // listen
+        document.querySelector('textarea.preparetext').oninput = function(){prepareTextOnInput(this)}
+        document.querySelector("#step1 > input.loadfile").onclick = function(){useLocalFile()}
+        document.querySelector("#step1 > input.exec").onclick = function(){pictureToBoundary(()=>boundaryToQuon());}
+        document.querySelector("#step3 > input.loadfile").onclick = function(){useLocalTexture()}
+        document.querySelector("#step3 > input.exec").onclick = function(){addTexture()}
+
+        // exec once
         prepareTextOnInput(document.querySelector('textarea.preparetext'))
-        pictureToBoundary(()=>boundaryToQuon());
+        pictureToBoundary(()=>{boundaryToQuon();addTexture()});
     }
 }
 
