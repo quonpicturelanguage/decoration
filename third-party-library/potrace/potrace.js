@@ -1301,7 +1301,7 @@ var Potrace = (function() {
     getSVG: getSVG,
     img: imgElement,
     getVars:()=>{
-      return {bm,pathlist}
+      return {bm,pathlist,imgCanvas}
     }
   };
 })();

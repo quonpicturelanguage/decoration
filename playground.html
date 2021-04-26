@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>play ground</title>
+    <style>
+        .preparetext {
+            font-family: cursive;
+        }
+        span.textpreview{
+            font-family: cursive;
+            font-size: 53px;
+            letter-spacing: 5.3px;
+            text-shadow: 
+            0px 0px 3px black,
+            0px 0px 3px black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content">
+        <div class="title">
+            <p>The following steps to build a Quon strings</p>
+        </div>
+        <div class="step" id="step0p5">
+            <h3>Step 0.5: prepare picture from text</h3>
+            <p>Use handwritten fonts to make the picture as smooth as possible</p>
+            <textarea class="preparetext" cols="25" rows="4">Thank you
+Barbara</textarea><br>
+            <span class="textpreview"><br>
+        </div>
+        <div class="step" id="step1">
+            <h3>Step 1: picture to boundary</h3>
+            <p>input:</p>
+            <div class="canvasarea"></div>
+            <input type="button" value="use local file as input" class="loadfile">
+            <p>convert picture to boundary by potrace</p>
+            <input type="button" value="exec" class="exec">
+            <div class="boundary"></div>
+        </div>
+        <div class="step" id="step2">
+            <h3>Step 2: boundary to Quon</h3>
+            <div class="quonimg"></div>
+        </div>
+        <div class="step" id="step3">
+            <h3>Step 3: add texture</h3>
+            <img src="texture.png" id="texture"><br>
+            <input type="button" value="use local file as texture" class="loadfile">
+            <input type="button" value="exec" class="exec">
+        </div>
+    </div>
+    <script src="../visualtool/src/main.js"></script>
+    <script type="module">
+        import { main } from './lib.js';
+        main();
+    </script>
+</body>
+
+</html>
