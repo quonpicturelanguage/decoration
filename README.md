@@ -8,7 +8,7 @@ output demo:
 
 <img src="output1.png" width="1387">
 
-This project is made for the retirement of Barbara Drauschke, thank you for your work on the Mathematical Picture Language Project.
+This project is made for the retirement of Barbara Drauschke, thanks for your assistance with the Mathematical Picture Language Project.
 
 ## License
 
