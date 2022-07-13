@@ -566,6 +566,53 @@ function main(params) {
         })
     }
 
+    let addTexture_as_mark = function () {
+        document.querySelector('.coloredquon').innerHTML=''
+        let {svg,svgid,svgw,svgh,imgw,imgh,w,h,svg64} = vars.quon
+        var textureElement = document.querySelector("#texture")
+        var imgElement = document.createElement('img')
+        var imgCanvas = document.createElement("canvas")
+        var imgCanvas2 = document.createElement("canvas")
+        imgElement.src = svg64
+        imgElement.onload=()=>{
+            imgCanvas.width = textureElement.width;
+            imgCanvas.height = textureElement.height;
+            var ctx = imgCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0,0,textureElement.width,textureElement.height);
+            ctx.drawImage(imgElement, 0, 0, textureElement.width,textureElement.height);
+            var imgdataobj = ctx.getImageData(0, 0, textureElement.width, textureElement.height);
+
+            imgCanvas2.width = textureElement.width;
+            imgCanvas2.height = textureElement.height;
+            var ctx2 = imgCanvas2.getContext('2d');
+            ctx2.clearRect(0,0,textureElement.width,textureElement.height);
+            ctx2.drawImage(textureElement, 0, 0, textureElement.width,textureElement.height);
+            var imgdataobj2 = ctx2.getImageData(0, 0, textureElement.width, textureElement.height);
+
+            var l = imgdataobj.data.length, i, j, color;
+            for (i = 0, j = 0; i < l; i += 4, j++) {
+                imgdataobj2.data[i + 3] = imgdataobj.data[i]
+            }
+            ctx.clearRect(0,0,imgElement.width,imgElement.height)
+            ctx.putImageData(imgdataobj, 0, 0);
+
+            ctx2.clearRect(0,0,imgElement.width,imgElement.height)
+            // ctx2.fillStyle = 'white';
+            // ctx2.fillRect(0,0,imgElement.width,imgElement.height);
+            ctx2.putImageData(imgdataobj2, 0, 0);
+
+            // document.querySelector('.coloredquon').appendChild(imgCanvas)
+            // document.querySelector('.coloredquon').appendChild(imgCanvas2)
+
+            let img = document.createElement('img')
+            img.src = imgCanvas2.toDataURL()
+            img.width = textureElement.width
+            img.height = textureElement.height
+            document.querySelector('.coloredquon').appendChild(img)
+        }
+        // document.querySelector('.coloredquon').appendChild(imgElement)
+    }
     let addTexture = function () {
         document.querySelector('.coloredquon').innerHTML=''
         let {svg,svgid,svgw,svgh,imgw,imgh,w,h,svg64} = vars.quon
@@ -632,6 +679,7 @@ function main(params) {
         document.querySelector("#step1 > input.exec").onclick = function(){pictureToBoundary(()=>boundaryToQuon());}
         document.querySelector("#step3 > input.loadfile").onclick = function(){useLocalTexture()}
         document.querySelector("#step3 > input.exec").onclick = function(){addTexture()}
+        document.querySelector("#step3 > input.exec_as_mark").onclick = function(){addTexture_as_mark()}
 
         // exec once
         prepareTextOnInput(document.querySelector('textarea.preparetext'))
